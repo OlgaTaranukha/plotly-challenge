@@ -4,54 +4,59 @@ function buildMetadata(sample) {
 
   // Use `d3.json` to fetch the metadata for a sample
   // Use d3 to select the panel with id of `#sample-metadata`
-  var url = "/metadata/${sample}";
+  var url = `/metadata/${sample}`;
   console.log(url);
 
-  d3.json(url).then(function(sample){
-    //console.log(sample);
-    // Use `.html("") to clear any existing metadata
-    var sample_metadata = d3.select("#sample-metadata");
+  d3.json(url).then(function(sample_data){
+    console.log(sample_data);
 
+    var sample_metadata = d3.select("#sample-metadata");
+    
+    // Use `.html("") to clear any existing metadata
     sample_metadata.html("");
 
     // Use `Object.entries` to add each key and value pair to the panel
     // Hint: Inside the loop, you will need to use d3 to append new
     // tags for each key-value in the metadata.
-    Object.entries(sample).forEach(function ([key, value]) {
-      var row = sample_metadata.append("panel-body");
-      row.text("${key}: ${value} \n");
-      //console.log('${key}: ${value} \n');
+    Object.entries(sample_data).forEach(function([key, value]) {
+      var row = sample_metadata.append("h6");
+      row.text(`${key}: ${value}`);
+      console.log(`${key}: ${value} \n`);
     });
-  });
   
-  // BONUS: Build the Gauge Chart
-  // buildGauge(data.WFREQ);
+    // BONUS: Build the Gauge Chart
+    buildGauge(sample_data.WFREQ);
+  });
+
 }
 
 function buildCharts(sample) {
 
   // @TODO: Use `d3.json` to fetch the sample data for the plots
-  console.log(sample);
-  var url = "/samples/${sample}";
-  //var url = "/samples/940";
+  var url = `/samples/${sample}`;
   console.log(url);
 
-  d3.json(url).then(function(data) {
+  d3.json(url).then(function(sample_data) {
+    console.log(sample_data);
     // @TODO: Build a Bubble Chart using the sample data
-    var x_values = data.otu_ids;
-    var y_values = data.sample_values;
-    var m_size = data.sample_values;
-    var m_colors = data.otu_ids; 
-    var t_values = data.otu_labels;
-    
+    var x_values = sample_data.otu_ids;
+    var y_values = sample_data.sample_values;
+    var m_size   = sample_data.sample_values;
+    var m_color = sample_data.otu_ids; 
+    var text_values = sample_data.otu_labels;  
+    var desired_maximum_marker_size = 100;
+
     var trace1 = {
+      type: "bubble",
+      mode: 'markers',
       x: x_values,
       y: y_values,
-      text: t_values,
-      mode: "markers",
+      text: text_values,
       marker: {
-        color: m_colors,
-        size: m_size
+        color: m_color,
+        size: m_size,
+        sizeref: 2.0 * Math.max(m_size) / (desired_maximum_marker_size**2),
+        //sizemode: 'area'
       } 
     }; 
 
@@ -66,21 +71,20 @@ function buildCharts(sample) {
     // @TODO: Build a Pie Chart
     // HINT: You will need to use slice() to grab the top 10 sample_values,
     // otu_ids, and labels (10 each).
-    d3.json(url).then(function(data) {  
-      var pie_values = data.sample_values.slice(0,10);  
-      var pie_labels = data.otu_ids.slice(0,10);
-      var pie_hover_text = data.otu_labels.slice(0,10);
+    var pie_values = sample_data.sample_values.slice(0,10);  
+    var pie_labels = sample_data.otu_ids.slice(0,10);
+    var pie_hover_text = sample_data.otu_labels.slice(0,10);
          
-      var data = [{ 
-        values: pie_values, 
-        labels: pie_labels,  
-        hovertext: pie_hover_text,  
-        type: "pie" 
-      }];
+    var data = [{ 
+      type: "pie",
+      height: 500,
+      width: 500,
+      values: pie_values, 
+      labels: pie_labels,  
+      hovertext: pie_hover_text  
+    }];
     
-      Plotly.newPlot("pie", data);
-
-    });
+    Plotly.newPlot("pie", data);
   
   });  
     
@@ -104,6 +108,7 @@ function init() {
     buildCharts(firstSample);
     buildMetadata(firstSample);
   });
+
 }
 
 function optionChanged(newSample) {
